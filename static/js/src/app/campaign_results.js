@@ -244,6 +244,68 @@ function exportAsCSV(scope) {
     $("#exportButton").html(exportHTML)
 }
 
+var metricsLoaded = false
+
+// Toggles between the event charts section and the campaign metrics section
+function toggleMetricsView() {
+    var showingMetrics = $('#metrics_section').is(':visible')
+    if (showingMetrics) {
+        $('#metrics_section').hide()
+        $('#event_charts_section').show()
+        $('#metrics_toggle_btn').html('<i class="fa fa-chevron-down"></i> View Campaign Metrics')
+    } else {
+        $('#event_charts_section').hide()
+        $('#metrics_section').show()
+        if (!metricsLoaded) {
+            loadMetrics()
+            metricsLoaded = true
+        }
+        $('#metrics_toggle_btn').html('<i class="fa fa-chevron-up"></i> View Campaign Charts')
+    }
+}
+
+// Fetches campaign metrics and renders them in the metrics section
+function loadMetrics() {
+    api.campaignId.metrics(campaign.id)
+        .success(function(m) {
+            var unsafeRate = m.unsafe_interaction_rate || 0
+            var submissionRate = m.submission_rate || 0
+
+            renderPieChart({
+                elemId: 'unsafe_rate_chart',
+                title: 'Unsafe Interaction Rate',
+                data: [
+                    {name: 'Unsafe', y: unsafeRate, count: unsafeRate.toFixed(1) + '%'},
+                    {name: '', y: 100 - unsafeRate}
+                ],
+                colors: ['#F39C12', '#dddddd']
+            })
+
+            renderPieChart({
+                elemId: 'submission_rate_chart',
+                title: 'Submission Rate',
+                data: [
+                    {name: 'Submitted', y: submissionRate, count: submissionRate.toFixed(1) + '%'},
+                    {name: '', y: 100 - submissionRate}
+                ],
+                colors: ['#f05b4f', '#dddddd']
+            })
+
+            var avg = (m.average_time_to_click_seconds != null && m.average_time_to_click_seconds > 0)
+                ? m.average_time_to_click_seconds.toFixed(1) + 's'
+                : 'N/A'
+            $('#avg_time_to_click_stat').html(
+                '<div style="text-align:center;padding-top:55px;">' +
+                '<div style="font-size:24px;font-weight:bold;font-family:Helvetica,Arial,sans-serif;color:#3498DB;">' + avg + '</div>' +
+                '<div style="font-size:12px;color:#999;margin-top:8px;font-family:Helvetica,Arial,sans-serif;">Avg. Time to Click</div>' +
+                '</div>'
+            )
+        })
+        .error(function() {
+            errorFlash("Error loading metrics")
+        })
+}
+
 // Exports campaign metrics as a JSON file
 function exportMetrics() {
     api.campaignId.metrics(campaign.id)

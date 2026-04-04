@@ -76,39 +76,55 @@
             <div id="timeline_chart"></div>
           </div>
         </div>
-        <div class="row">
-          <div style="height: 200px" class="col-lg-1 col-md-1"></div>
-          <div
-            id="sent_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div
-            id="opened_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div
-            id="clicked_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div
-            id="landing_page_viewed_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div
-            id="submitted_data_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div
-            id="reported_chart"
-            style="height: 200px"
-            class="col-lg-2 col-md-2"
-          ></div>
-          <div style="height: 200px" class="col-lg-1 col-md-1"></div>
+        <div class="row" style="text-align:center;margin:10px 0;">
+          <button class="btn btn-default" id="metrics_toggle_btn" onclick="toggleMetricsView()">
+            <i class="fa fa-chevron-down"></i> View Campaign Metrics
+          </button>
+        </div>
+        <div id="event_charts_section">
+          <div class="row">
+            <div style="height: 200px" class="col-lg-1 col-md-1"></div>
+            <div
+              id="sent_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div
+              id="opened_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div
+              id="clicked_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div
+              id="landing_page_viewed_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div
+              id="submitted_data_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div
+              id="reported_chart"
+              style="height: 200px"
+              class="col-lg-2 col-md-2"
+            ></div>
+            <div style="height: 200px" class="col-lg-1 col-md-1"></div>
+          </div>
+        </div>
+        <div id="metrics_section" style="display:none;">
+          <div class="row">
+            <div style="height:200px;" class="col-lg-1 col-md-1"></div>
+            <div id="unsafe_rate_chart" style="height:200px;" class="col-lg-3 col-md-3"></div>
+            <div id="submission_rate_chart" style="height:200px;" class="col-lg-3 col-md-3"></div>
+            <div id="avg_time_to_click_stat" style="height:200px;" class="col-lg-3 col-md-3"></div>
+            <div style="height:200px;" class="col-lg-1 col-md-1"></div>
+          </div>
         </div>
         <div class="row" id="resultsMapContainer">
           <div class="col-md-6">
