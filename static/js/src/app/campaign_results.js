@@ -36,6 +36,12 @@ var statuses = {
         icon: "fa-mouse-pointer",
         point: "ct-point-clicked"
     },
+    "Landing Page Viewed": {
+        color: "#3498DB",
+        label: "label-info",
+        icon: "fa-eye",
+        point: "ct-point-landing"
+   },
     "Success": {
         color: "#f05b4f",
         label: "label-danger",
@@ -100,6 +106,7 @@ var statuses = {
 var statusMapping = {
     "Email Sent": "sent",
     "Email Opened": "opened",
+    "Landing Page Viewed": "landing_page_viewed",
     "Clicked Link": "clicked",
     "Submitted Data": "submitted_data",
     "Email Reported": "reported",
@@ -111,6 +118,7 @@ var progressListing = [
     "Email Sent",
     "Email Opened",
     "Clicked Link",
+    "Landing Page Viewed",
     "Submitted Data"
 ]
 
@@ -392,7 +400,11 @@ function renderTimeline(data) {
                 '    <span class="timeline-date">' + moment.utc(event.time).local().format('MMMM Do YYYY h:mm:ss a') + '</span>'
             if (event.details) {
                 details = JSON.parse(event.details)
-                if (event.message == "Clicked Link" || event.message == "Submitted Data") {
+                if (
+                    event.message == "Clicked Link" ||
+                    event.message == "Landing Page Viewed" ||
+                    event.message == "Submitted Data"
+                ) {
                     deviceView = renderDevice(details)
                     if (deviceView) {
                         results += deviceView
@@ -669,6 +681,13 @@ function poll() {
                     email_series_data[progressListing[i]]++
                 }
             })
+            var landingViewedEmails = {}
+            $.each(campaign.timeline, function (i, event) {
+                if (event.message == "Landing Page Viewed" && event.email) {
+                    landingViewedEmails[event.email] = true
+                }
+            })
+            email_series_data["Landing Page Viewed"] = Object.keys(landingViewedEmails).length
             $.each(email_series_data, function (status, count) {
                 var email_data = []
                 if (!(status in statusMapping)) {
@@ -815,6 +834,13 @@ function load() {
                         email_series_data[progressListing[i]]++
                     }
                 })
+                var landingViewedEmails = {}
+                $.each(campaign.timeline, function (i, event) {
+                    if (event.message == "Landing Page Viewed" && event.email) {
+                        landingViewedEmails[event.email] = true
+                    }
+                })
+                email_series_data["Landing Page Viewed"] = Object.keys(landingViewedEmails).length
                 resultsTable.draw();
                 // Setup tooltips
                 $('[data-toggle="tooltip"]').tooltip()

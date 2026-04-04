@@ -38,6 +38,27 @@ type Result struct {
 	BaseRecipient
 }
 
+func (r *Result) hasEvent(message string) bool {
+	var count int
+	db.Model(&Event{}).
+		Where("campaign_id = ? AND email = ? AND message = ?", r.CampaignId, r.Email, message).
+		Count(&count)
+	return count > 0
+}
+// HandleLandingPageView updates a Result in the case where the recipient viewed
+// the landing page.
+func (r *Result) HandleLandingPageViewed(details EventDetails) error {
+	if r.hasEvent(EventLandingPageViewed) {
+		return nil
+	}
+
+	event, err := r.createEvent(EventLandingPageViewed, details)
+	if err != nil {
+		return err
+	}
+	r.ModifiedDate = event.Time
+	return db.Save(r).Error
+}
 func (r *Result) createEvent(status string, details interface{}) (*Event, error) {
 	e := &Event{Email: r.Email, Message: status}
 	if details != nil {

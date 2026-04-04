@@ -40,6 +40,12 @@ var statuses = {
         icon: "fa-mouse-pointer",
         point: "ct-point-clicked"
     },
+    "Landing Page Viewed": {
+    color: "#3498DB",
+    label: "label-info",
+    icon: "fa-eye",
+    point: "ct-point-landing"
+   },
     "Success": {
         color: "#f05b4f",
         label: "label-danger",
@@ -87,6 +93,7 @@ var statsMapping = {
     "opened": "Email Opened",
     "email_reported": "Email Reported",
     "clicked": "Clicked Link",
+    "landing_page_viewed": "Landing Page Viewed",
     "submitted_data": "Submitted Data",
 }
 
@@ -337,7 +344,7 @@ $(document).ready(function () {
                         var quickStats = launchDate + "<br><br>" + "Number of recipients: " + campaign.stats.total
                     } else {
                         launchDate = "Launch Date: " + moment(campaign.launch_date).format('MMMM Do YYYY, h:mm:ss a')
-                        var quickStats = launchDate + "<br><br>" + "Number of recipients: " + campaign.stats.total + "<br><br>" + "Emails opened: " + campaign.stats.opened + "<br><br>" + "Emails clicked: " + campaign.stats.clicked + "<br><br>" + "Submitted Credentials: " + campaign.stats.submitted_data + "<br><br>" + "Errors : " + campaign.stats.error + "<br><br>" + "Reported : " + campaign.stats.email_reported
+                        var quickStats = launchDate + "<br><br>" + "Number of recipients: " + campaign.stats.total + "<br><br>" + "Emails opened: " + campaign.stats.opened + "<br><br>" + "Emails clicked: " + campaign.stats.clicked + "<br><br>" + "Landing page viewed: " + campaign.stats.landing_page_viewed + "<br><br>" + "Submitted Credentials: " + campaign.stats.submitted_data + "<br><br>" + "Errors : " + campaign.stats.error + "<br><br>" + "Reported : " + campaign.stats.email_reported
                     }
                     // Add it to the list
                     campaignRows.push([

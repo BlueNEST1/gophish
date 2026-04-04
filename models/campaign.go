@@ -62,13 +62,14 @@ type CampaignSummary struct {
 
 // CampaignStats is a struct representing the statistics for a single campaign
 type CampaignStats struct {
-	Total         int64 `json:"total"`
-	EmailsSent    int64 `json:"sent"`
-	OpenedEmail   int64 `json:"opened"`
-	ClickedLink   int64 `json:"clicked"`
-	SubmittedData int64 `json:"submitted_data"`
-	EmailReported int64 `json:"email_reported"`
-	Error         int64 `json:"error"`
+	Total              int64 `json:"total"`
+	EmailsSent         int64 `json:"sent"`
+	OpenedEmail        int64 `json:"opened"`
+	ClickedLink        int64 `json:"clicked"`
+	LandingPageViewed  int64 `json:"landing_page_viewed"`
+	SubmittedData      int64 `json:"submitted_data"`
+	EmailReported      int64 `json:"email_reported"`
+	Error              int64 `json:"error"`
 }
 
 // Event contains the fields for an event
@@ -298,6 +299,14 @@ func getCampaignStats(cid int64) (CampaignStats, error) {
 	// Every opened email event implies the email was sent
 	s.EmailsSent += s.OpenedEmail
 	err = query.Where("status=?", Error).Count(&s.Error).Error
+	if err != nil {
+		return s, err
+	}
+	// Count unique targets that viewed the landing page (stored as timeline events)
+	err = db.Table("events").
+		Where("campaign_id = ? AND message = ?", cid, EventLandingPageViewed).
+		Group("email").
+		Count(&s.LandingPageViewed).Error
 	return s, err
 }
 

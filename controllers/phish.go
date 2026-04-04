@@ -225,7 +225,10 @@ func (ps *PhishingServer) PhishHandler(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		renderPhishResponse(w, r, ptx, p)
+		err = renderPhishResponse(w, r, ptx, p)
+		if err != nil {
+			return
+		}
 		return
 	}
 	rs := ctx.Get(r, "result").(models.Result)
@@ -257,18 +260,32 @@ func (ps *PhishingServer) PhishHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error(err)
 		}
 	}
+
 	ptx, err = models.NewPhishingTemplateContext(&c, rs.BaseRecipient, rs.RId)
 	if err != nil {
 		log.Error(err)
 		http.NotFound(w, r)
+		return
 	}
-	renderPhishResponse(w, r, ptx, p)
+
+	err = renderPhishResponse(w, r, ptx, p)
+	if err != nil {
+		return
+	}
+
+	// Only record landing page viewed after a successful GET render.
+	if r.Method == "GET" {
+		err = rs.HandleLandingPageViewed(d)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }
 
 // renderPhishResponse handles rendering the correct response to the phishing
 // connection. This usually involves writing out the page HTML or redirecting
 // the user to the correct URL.
-func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.PhishingTemplateContext, p models.Page) {
+func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.PhishingTemplateContext, p models.Page) error {
 	// If the request was a form submit and a redirect URL was specified, we
 	// should send the user to that URL
 	if r.Method == "POST" {
@@ -277,10 +294,10 @@ func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.Phis
 			if err != nil {
 				log.Error(err)
 				http.NotFound(w, r)
-				return
+				return err
 			}
 			http.Redirect(w, r, redirectURL, http.StatusFound)
-			return
+			return nil
 		}
 	}
 	// Otherwise, we just need to write out the templated HTML
@@ -288,9 +305,14 @@ func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.Phis
 	if err != nil {
 		log.Error(err)
 		http.NotFound(w, r)
-		return
+		return err
 	}
-	w.Write([]byte(html))
+	_, err = w.Write([]byte(html))
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return nil
 }
 
 // RobotsHandler prevents search engines, etc. from indexing phishing materials
