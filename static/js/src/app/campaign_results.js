@@ -244,6 +244,25 @@ function exportAsCSV(scope) {
     $("#exportButton").html(exportHTML)
 }
 
+// Exports campaign metrics as a JSON file
+function exportMetrics() {
+    api.campaignId.metrics(campaign.id)
+        .success(function(data) {
+            var filename = campaign.name + ' - Metrics.json'
+            var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'})
+            var url = window.URL.createObjectURL(blob)
+            var a = document.createElement('a')
+            a.href = url
+            a.setAttribute('download', filename)
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+        })
+        .error(function() {
+            errorFlash("Error exporting metrics")
+        })
+}
+
 // Exports the per-user analysis for the campaign as a JSON file
 function exportAnalysis() {
     api.campaignId.analysis(campaign.id)

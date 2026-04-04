@@ -153,6 +153,49 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 	return records, nil
 }
 
+// CampaignMetrics holds the computed behavioural metrics for a campaign.
+type CampaignMetrics struct {
+	UnsafeInteractionRate     float64 `json:"unsafe_interaction_rate"`
+	SubmissionRate            float64 `json:"submission_rate"`
+	AverageTimeToClickSeconds float64 `json:"average_time_to_click_seconds"`
+}
+
+// GetCampaignMetrics computes behavioural metrics from the analysis dataset.
+func GetCampaignMetrics(cid int64) (CampaignMetrics, error) {
+	records, err := GetCampaignAnalysis(cid)
+	if err != nil {
+		return CampaignMetrics{}, err
+	}
+	total := len(records)
+	if total == 0 {
+		return CampaignMetrics{}, nil
+	}
+	var unsafe, submitted, clickSum float64
+	var clickCount int
+	for _, r := range records {
+		clicked := r.FirstClickedAt != nil
+		sub := r.SubmittedAt != nil
+		if clicked || sub {
+			unsafe++
+		}
+		if sub {
+			submitted++
+		}
+		if r.TimeToClickSeconds != nil {
+			clickSum += *r.TimeToClickSeconds
+			clickCount++
+		}
+	}
+	m := CampaignMetrics{
+		UnsafeInteractionRate: unsafe / float64(total) * 100,
+		SubmissionRate:        submitted / float64(total) * 100,
+	}
+	if clickCount > 0 {
+		m.AverageTimeToClickSeconds = clickSum / float64(clickCount)
+	}
+	return m, nil
+}
+
 // Event contains the fields for an event
 // that occurs during the campaign
 type Event struct {

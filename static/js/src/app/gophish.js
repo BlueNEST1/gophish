@@ -111,6 +111,10 @@ var api = {
         // analysis() - Queries the API for GET /campaigns/:id/export/analysis
         analysis: function (id) {
             return query("/campaigns/" + id + "/export/analysis", "GET", {}, true)
+        },
+        // metrics() - Queries the API for GET /campaigns/:id/metrics
+        metrics: function (id) {
+            return query("/campaigns/" + id + "/metrics", "GET", {}, true)
         }
     },
     // groups contains the endpoints for /groups

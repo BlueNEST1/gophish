@@ -141,6 +141,26 @@ func (as *Server) CampaignAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CampaignMetrics returns computed behavioural metrics for a campaign.
+func (as *Server) CampaignMetrics(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, _ := strconv.ParseInt(vars["id"], 0, 64)
+	_, err := models.GetCampaign(id, ctx.Get(r, "user_id").(int64))
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Campaign not found"}, http.StatusNotFound)
+		return
+	}
+	if r.Method == "GET" {
+		m, err := models.GetCampaignMetrics(id)
+		if err != nil {
+			log.Error(err)
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+		JSONResponse(w, m, http.StatusOK)
+	}
+}
+
 // CampaignComplete effectively "ends" a campaign.
 // Future phishing emails clicked will return a simple "404" page.
 func (as *Server) CampaignComplete(w http.ResponseWriter, r *http.Request) {
