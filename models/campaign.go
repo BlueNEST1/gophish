@@ -72,6 +72,87 @@ type CampaignStats struct {
 	Error              int64 `json:"error"`
 }
 
+// CampaignAnalysisRecord is a derived, per-user summary of campaign events.
+type CampaignAnalysisRecord struct {
+	CampaignId           int64    `json:"campaign_id"`
+	Email                string   `json:"email"`
+	SentAt               *string  `json:"sent_at"`
+	FirstClickedAt       *string  `json:"first_clicked_at"`
+	ClickCount           int      `json:"click_count"`
+	LandingPageViewedAt  *string  `json:"landing_page_viewed_at"`
+	LandingPageViewCount int      `json:"landing_page_view_count"`
+	SubmittedAt          *string  `json:"submitted_at"`
+	TimeToClickSeconds   *float64 `json:"time_to_click_seconds"`
+	TimeToSubmitSeconds  *float64 `json:"time_to_submit_seconds"`
+}
+
+// GetCampaignAnalysis returns one CampaignAnalysisRecord per target for the
+// given campaign, derived from the raw events table.
+func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
+	var events []Event
+	err := db.Where("campaign_id = ? AND email != ?", cid, "").
+		Order("time asc").
+		Find(&events).Error
+	if err != nil {
+		return nil, err
+	}
+
+	type group struct {
+		events []Event
+	}
+	grouped := map[string]*group{}
+	order := []string{}
+	for _, e := range events {
+		if _, exists := grouped[e.Email]; !exists {
+			order = append(order, e.Email)
+			grouped[e.Email] = &group{}
+		}
+		grouped[e.Email].events = append(grouped[e.Email].events, e)
+	}
+
+	records := make([]CampaignAnalysisRecord, 0, len(grouped))
+	for _, email := range order {
+		evs := grouped[email].events
+		rec := CampaignAnalysisRecord{
+			CampaignId: cid,
+			Email:      email,
+		}
+		for _, e := range evs {
+			ts := e.Time.UTC().Format("2006-01-02T15:04:05Z")
+			switch e.Message {
+			case EventSent:
+				rec.SentAt = &ts
+			case EventClicked:
+				rec.ClickCount++
+				if rec.FirstClickedAt == nil {
+					rec.FirstClickedAt = &ts
+				}
+			case EventLandingPageViewed:
+				rec.LandingPageViewCount++
+				if rec.LandingPageViewedAt == nil {
+					rec.LandingPageViewedAt = &ts
+				}
+			case EventDataSubmit:
+				rec.SubmittedAt = &ts
+			}
+		}
+		if rec.SentAt != nil && rec.FirstClickedAt != nil {
+			sentAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.SentAt)
+			clickedAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.FirstClickedAt)
+			d := clickedAt.Sub(sentAt).Seconds()
+			rec.TimeToClickSeconds = &d
+		}
+		if rec.SentAt != nil && rec.SubmittedAt != nil {
+			sentAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.SentAt)
+			submittedAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.SubmittedAt)
+			d := submittedAt.Sub(sentAt).Seconds()
+			rec.TimeToSubmitSeconds = &d
+		}
+		records = append(records, rec)
+	}
+	return records, nil
+}
+
 // Event contains the fields for an event
 // that occurs during the campaign
 type Event struct {

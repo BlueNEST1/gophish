@@ -120,6 +120,27 @@ func (as *Server) CampaignSummary(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CampaignAnalysis returns a derived per-user summary of campaign events,
+// with one record per target showing timestamps and counts for each event type.
+func (as *Server) CampaignAnalysis(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, _ := strconv.ParseInt(vars["id"], 0, 64)
+	_, err := models.GetCampaign(id, ctx.Get(r, "user_id").(int64))
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Campaign not found"}, http.StatusNotFound)
+		return
+	}
+	if r.Method == "GET" {
+		records, err := models.GetCampaignAnalysis(id)
+		if err != nil {
+			log.Error(err)
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+		JSONResponse(w, records, http.StatusOK)
+	}
+}
+
 // CampaignComplete effectively "ends" a campaign.
 // Future phishing emails clicked will return a simple "404" page.
 func (as *Server) CampaignComplete(w http.ResponseWriter, r *http.Request) {
