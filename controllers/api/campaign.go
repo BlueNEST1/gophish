@@ -141,6 +141,73 @@ func (as *Server) CampaignAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CampaignCompare returns a side-by-side metric comparison between two campaigns.
+func (as *Server) CampaignCompare(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		return
+	}
+	uid := ctx.Get(r, "user_id").(int64)
+	idA, err := strconv.ParseInt(r.URL.Query().Get("campaign_a"), 0, 64)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid campaign_a"}, http.StatusBadRequest)
+		return
+	}
+	idB, err := strconv.ParseInt(r.URL.Query().Get("campaign_b"), 0, 64)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid campaign_b"}, http.StatusBadRequest)
+		return
+	}
+	cA, err := models.GetCampaign(idA, uid)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Campaign A not found"}, http.StatusNotFound)
+		return
+	}
+	cB, err := models.GetCampaign(idB, uid)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Campaign B not found"}, http.StatusNotFound)
+		return
+	}
+	mA, err := models.GetCampaignMetrics(idA)
+	if err != nil {
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+	mB, err := models.GetCampaignMetrics(idB)
+	if err != nil {
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+	var timeDiff *float64
+	if mA.AverageTimeToClickSeconds != nil && mB.AverageTimeToClickSeconds != nil {
+		d := *mB.AverageTimeToClickSeconds - *mA.AverageTimeToClickSeconds
+		timeDiff = &d
+	}
+	result := models.CampaignComparisonResult{
+		CampaignA: models.CampaignComparisonEntry{
+			Id:                        idA,
+			Name:                      cA.Name,
+			UnsafeInteractionRate:     mA.UnsafeInteractionRate,
+			SubmissionRate:            mA.SubmissionRate,
+			AverageTimeToClickSeconds: mA.AverageTimeToClickSeconds,
+		},
+		CampaignB: models.CampaignComparisonEntry{
+			Id:                        idB,
+			Name:                      cB.Name,
+			UnsafeInteractionRate:     mB.UnsafeInteractionRate,
+			SubmissionRate:            mB.SubmissionRate,
+			AverageTimeToClickSeconds: mB.AverageTimeToClickSeconds,
+		},
+		Difference: models.CampaignMetricsDiff{
+			UnsafeInteractionRate:     mB.UnsafeInteractionRate - mA.UnsafeInteractionRate,
+			SubmissionRate:            mB.SubmissionRate - mA.SubmissionRate,
+			AverageTimeToClickSeconds: timeDiff,
+		},
+	}
+	JSONResponse(w, result, http.StatusOK)
+}
+
 // CampaignMetrics returns computed behavioural metrics for a campaign.
 func (as *Server) CampaignMetrics(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

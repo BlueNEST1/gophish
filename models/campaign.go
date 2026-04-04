@@ -155,9 +155,9 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 
 // CampaignMetrics holds the computed behavioural metrics for a campaign.
 type CampaignMetrics struct {
-	UnsafeInteractionRate     float64 `json:"unsafe_interaction_rate"`
-	SubmissionRate            float64 `json:"submission_rate"`
-	AverageTimeToClickSeconds float64 `json:"average_time_to_click_seconds"`
+	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
+	SubmissionRate            float64  `json:"submission_rate"`
+	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
 }
 
 // GetCampaignMetrics computes behavioural metrics from the analysis dataset.
@@ -191,9 +191,33 @@ func GetCampaignMetrics(cid int64) (CampaignMetrics, error) {
 		SubmissionRate:        submitted / float64(total) * 100,
 	}
 	if clickCount > 0 {
-		m.AverageTimeToClickSeconds = clickSum / float64(clickCount)
+		avg := clickSum / float64(clickCount)
+		m.AverageTimeToClickSeconds = &avg
 	}
 	return m, nil
+}
+
+// CampaignComparisonEntry holds metrics for one campaign within a comparison.
+type CampaignComparisonEntry struct {
+	Id                        int64    `json:"id"`
+	Name                      string   `json:"name"`
+	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
+	SubmissionRate            float64  `json:"submission_rate"`
+	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
+}
+
+// CampaignMetricsDiff holds the difference between two campaigns' metrics.
+type CampaignMetricsDiff struct {
+	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
+	SubmissionRate            float64  `json:"submission_rate"`
+	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
+}
+
+// CampaignComparisonResult holds the full side-by-side comparison.
+type CampaignComparisonResult struct {
+	CampaignA  CampaignComparisonEntry `json:"campaign_a"`
+	CampaignB  CampaignComparisonEntry `json:"campaign_b"`
+	Difference CampaignMetricsDiff     `json:"difference"`
 }
 
 // Event contains the fields for an event

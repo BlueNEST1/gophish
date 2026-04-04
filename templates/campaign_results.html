@@ -126,6 +126,47 @@
             <div style="height:200px;" class="col-lg-1 col-md-1"></div>
           </div>
         </div>
+        <div class="row" style="margin-top:20px;">
+          <div class="col-lg-12">
+            <h4 style="color:#888;">Compare with Another Campaign</h4>
+            <select id="compare_campaign_select" class="form-control" style="width:auto;display:inline-block;margin-right:10px;">
+              <option value="">Select a campaign...</option>
+            </select>
+            <button class="btn btn-default" onclick="runComparison()">Compare</button>
+          </div>
+        </div>
+        <div id="comparison_results" style="display:none;margin-top:15px;">
+          <table class="table table-bordered table-condensed">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th id="compare_col_a">Current Campaign</th>
+                <th id="compare_col_b">Comparison Campaign</th>
+                <th>Difference (B &minus; A)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Unsafe Interaction Rate</td>
+                <td id="cmp_unsafe_a"></td>
+                <td id="cmp_unsafe_b"></td>
+                <td id="cmp_unsafe_diff"></td>
+              </tr>
+              <tr>
+                <td>Submission Rate</td>
+                <td id="cmp_sub_a"></td>
+                <td id="cmp_sub_b"></td>
+                <td id="cmp_sub_diff"></td>
+              </tr>
+              <tr>
+                <td>Avg. Time to Click</td>
+                <td id="cmp_time_a"></td>
+                <td id="cmp_time_b"></td>
+                <td id="cmp_time_diff"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div class="row" id="resultsMapContainer">
           <div class="col-md-6">
             <p style="text-align: center">Targets Map</p>

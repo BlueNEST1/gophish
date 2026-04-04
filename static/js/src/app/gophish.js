@@ -84,6 +84,10 @@ var api = {
         // summary() - Queries the API for GET /campaigns/summary
         summary: function () {
             return query("/campaigns/summary", "GET", {}, false)
+        },
+        // compare() - Queries the API for GET /campaigns/compare
+        compare: function (idA, idB) {
+            return query("/campaigns/compare?campaign_a=" + idA + "&campaign_b=" + idB, "GET", {}, true)
         }
     },
     // campaignId contains the endpoints for /campaigns/:id

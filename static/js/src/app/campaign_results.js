@@ -306,6 +306,61 @@ function loadMetrics() {
         })
 }
 
+// Populates the comparison dropdown with all campaigns except the current one
+function loadComparisonDropdown() {
+    api.campaigns.summary()
+        .success(function(data) {
+            var select = $('#compare_campaign_select')
+            $.each(data.campaigns, function(i, c) {
+                if (c.id != campaign.id) {
+                    select.append('<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>')
+                }
+            })
+        })
+}
+
+// Renders a difference cell with sign and colour coding
+function renderDiffCell(selector, value, unit, lowerIsBetter) {
+    if (value === null || value === undefined) {
+        $(selector).text('N/A')
+        return
+    }
+    var sign = value > 0 ? '+' : ''
+    var color = ''
+    if (lowerIsBetter) {
+        color = value < 0 ? 'green' : (value > 0 ? 'red' : '')
+    }
+    $(selector).html('<span style="color:' + color + ';">' + sign + value.toFixed(1) + unit + '</span>')
+}
+
+// Fetches the comparison result and renders the table
+function runComparison() {
+    var idB = $('#compare_campaign_select').val()
+    if (!idB) return
+    api.campaigns.compare(campaign.id, idB)
+        .success(function(r) {
+            // Update column headers with campaign names
+            $('#compare_col_a').text(r.campaign_a.name)
+            $('#compare_col_b').text(r.campaign_b.name)
+            // Rates
+            $('#cmp_unsafe_a').text(r.campaign_a.unsafe_interaction_rate.toFixed(1) + '%')
+            $('#cmp_unsafe_b').text(r.campaign_b.unsafe_interaction_rate.toFixed(1) + '%')
+            $('#cmp_sub_a').text(r.campaign_a.submission_rate.toFixed(1) + '%')
+            $('#cmp_sub_b').text(r.campaign_b.submission_rate.toFixed(1) + '%')
+            // Avg time to click — null means no clicks
+            $('#cmp_time_a').text(r.campaign_a.average_time_to_click_seconds != null ? r.campaign_a.average_time_to_click_seconds.toFixed(1) + 's' : 'N/A')
+            $('#cmp_time_b').text(r.campaign_b.average_time_to_click_seconds != null ? r.campaign_b.average_time_to_click_seconds.toFixed(1) + 's' : 'N/A')
+            // Difference cells
+            renderDiffCell('#cmp_unsafe_diff', r.difference.unsafe_interaction_rate, '%', true)
+            renderDiffCell('#cmp_sub_diff', r.difference.submission_rate, '%', true)
+            renderDiffCell('#cmp_time_diff', r.difference.average_time_to_click_seconds, 's', false)
+            $('#comparison_results').show()
+        })
+        .error(function() {
+            errorFlash("Error loading comparison")
+        })
+}
+
 // Exports campaign metrics as a JSON file
 function exportMetrics() {
     api.campaignId.metrics(campaign.id)
@@ -1023,6 +1078,7 @@ function load() {
                     });
                 }
                 updateMap(campaign.results)
+                loadComparisonDropdown()
             }
         })
         .error(function () {
