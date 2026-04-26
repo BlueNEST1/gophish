@@ -74,16 +74,20 @@ type CampaignStats struct {
 
 // CampaignAnalysisRecord is a derived, per-user summary of campaign events.
 type CampaignAnalysisRecord struct {
-	CampaignId           int64    `json:"campaign_id"`
-	Email                string   `json:"email"`
-	SentAt               *string  `json:"sent_at"`
-	FirstClickedAt       *string  `json:"first_clicked_at"`
-	ClickCount           int      `json:"click_count"`
-	LandingPageViewedAt  *string  `json:"landing_page_viewed_at"`
-	LandingPageViewCount int      `json:"landing_page_view_count"`
-	SubmittedAt          *string  `json:"submitted_at"`
-	TimeToClickSeconds   *float64 `json:"time_to_click_seconds"`
-	TimeToSubmitSeconds  *float64 `json:"time_to_submit_seconds"`
+	CampaignId              int64    `json:"campaign_id"`
+	Email                   string   `json:"email"`
+	SentAt                  *string  `json:"sent_at"`
+	FirstClickedAt          *string  `json:"first_clicked_at"`
+	ClickCount              int      `json:"click_count"`
+	LandingPageViewedAt     *string  `json:"landing_page_viewed_at"`
+	LandingPageViewCount    int      `json:"landing_page_view_count"`
+	SubmittedAt             *string  `json:"submitted_at"`
+	TimeToClickSeconds      *float64 `json:"time_to_click_seconds"`
+	TimeToSubmitSeconds     *float64 `json:"time_to_submit_seconds"`
+	ReportedAt              *string  `json:"reported_at"`
+	ReportingLatencySeconds *float64 `json:"reporting_latency_seconds"`
+	ClickToSubmitSeconds    *float64 `json:"click_to_submit_seconds"`
+	ReportedBeforeClick     *bool    `json:"reported_before_click"`
 }
 
 // GetCampaignAnalysis returns one CampaignAnalysisRecord per target for the
@@ -134,6 +138,10 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 				}
 			case EventDataSubmit:
 				rec.SubmittedAt = &ts
+			case EventReported:
+				if rec.ReportedAt == nil {
+					rec.ReportedAt = &ts
+				}
 			}
 		}
 		if rec.SentAt != nil && rec.FirstClickedAt != nil {
@@ -148,6 +156,22 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 			d := submittedAt.Sub(sentAt).Seconds()
 			rec.TimeToSubmitSeconds = &d
 		}
+		if rec.FirstClickedAt != nil && rec.SubmittedAt != nil {
+			clickedAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.FirstClickedAt)
+			submittedAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.SubmittedAt)
+			d := submittedAt.Sub(clickedAt).Seconds()
+			rec.ClickToSubmitSeconds = &d
+		}
+		if rec.SentAt != nil && rec.ReportedAt != nil {
+			sentAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.SentAt)
+			reportedAt, _ := time.Parse("2006-01-02T15:04:05Z", *rec.ReportedAt)
+			d := reportedAt.Sub(sentAt).Seconds()
+			rec.ReportingLatencySeconds = &d
+		}
+		if rec.ReportedAt != nil {
+			before := rec.FirstClickedAt == nil || *rec.ReportedAt < *rec.FirstClickedAt
+			rec.ReportedBeforeClick = &before
+		}
 		records = append(records, rec)
 	}
 	return records, nil
@@ -155,9 +179,12 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 
 // CampaignMetrics holds the computed behavioural metrics for a campaign.
 type CampaignMetrics struct {
-	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
-	SubmissionRate            float64  `json:"submission_rate"`
-	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
+	UnsafeInteractionRate         float64  `json:"unsafe_interaction_rate"`
+	SubmissionRate                 float64  `json:"submission_rate"`
+	AverageTimeToClickSeconds      *float64 `json:"average_time_to_click_seconds"`
+	ReportingRate                  float64  `json:"reporting_rate"`
+	ClickToSubmitRate              float64  `json:"click_to_submit_rate"`
+	AverageReportingLatencySeconds *float64 `json:"average_reporting_latency_seconds"`
 }
 
 // GetCampaignMetrics computes behavioural metrics from the analysis dataset.
@@ -170,13 +197,17 @@ func GetCampaignMetrics(cid int64) (CampaignMetrics, error) {
 	if total == 0 {
 		return CampaignMetrics{}, nil
 	}
-	var unsafe, submitted, clickSum float64
-	var clickCount int
+	var unsafe, submitted, clickers, reported float64
+	var clickSum, reportLatSum float64
+	var clickCount, reportLatCount int
 	for _, r := range records {
 		clicked := r.FirstClickedAt != nil
 		sub := r.SubmittedAt != nil
 		if clicked || sub {
 			unsafe++
+		}
+		if clicked {
+			clickers++
 		}
 		if sub {
 			submitted++
@@ -185,14 +216,29 @@ func GetCampaignMetrics(cid int64) (CampaignMetrics, error) {
 			clickSum += *r.TimeToClickSeconds
 			clickCount++
 		}
+		if r.ReportedAt != nil {
+			reported++
+		}
+		if r.ReportingLatencySeconds != nil {
+			reportLatSum += *r.ReportingLatencySeconds
+			reportLatCount++
+		}
 	}
 	m := CampaignMetrics{
 		UnsafeInteractionRate: unsafe / float64(total) * 100,
 		SubmissionRate:        submitted / float64(total) * 100,
+		ReportingRate:         reported / float64(total) * 100,
+	}
+	if clickers > 0 {
+		m.ClickToSubmitRate = submitted / clickers * 100
 	}
 	if clickCount > 0 {
 		avg := clickSum / float64(clickCount)
 		m.AverageTimeToClickSeconds = &avg
+	}
+	if reportLatCount > 0 {
+		avg := reportLatSum / float64(reportLatCount)
+		m.AverageReportingLatencySeconds = &avg
 	}
 	return m, nil
 }
