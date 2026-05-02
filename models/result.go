@@ -161,7 +161,6 @@ func (r *Result) HandleClickedLink(details EventDetails) error {
 // HandleFormSubmit updates a Result in the case where the recipient submitted
 // credentials to the form on a Landing Page.
 func (r *Result) HandleFormSubmit(details EventDetails) error {
-	details.Payload = nil
 	event, err := r.createEvent(EventDataSubmit, details)
 	if err != nil {
 		return err
