@@ -112,9 +112,11 @@ func (ps *PhishingServer) registerRoutes() {
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
 	router.HandleFunc("/track", ps.TrackHandler)
 	router.HandleFunc("/robots.txt", ps.RobotsHandler)
+	router.HandleFunc("/interact", ps.InteractHandler)
 	router.HandleFunc("/{path:.*}/track", ps.TrackHandler)
 	router.HandleFunc("/{path:.*}/report", ps.ReportHandler)
 	router.HandleFunc("/report", ps.ReportHandler)
+	router.HandleFunc("/{path:.*}/interact", ps.InteractHandler)
 	router.HandleFunc("/{path:.*}", ps.PhishHandler)
 
 	// Setup GZIP compression
@@ -191,6 +193,30 @@ func (ps *PhishingServer) ReportHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	err = rs.HandleEmailReport(d)
+	if err != nil {
+		log.Error(err)
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// InteractHandler records a Form Started event when a target first interacts
+// with a form field on the phishing page.
+func (ps *PhishingServer) InteractHandler(w http.ResponseWriter, r *http.Request) {
+	r, err := setupContext(r)
+	if err != nil {
+		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+			log.Error(err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if _, ok := ctx.Get(r, "result").(models.EmailRequest); ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	rs := ctx.Get(r, "result").(models.Result)
+	d := ctx.Get(r, "details").(models.EventDetails)
+	err = rs.HandleFormStarted(d)
 	if err != nil {
 		log.Error(err)
 	}
@@ -306,6 +332,22 @@ func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.Phis
 		log.Error(err)
 		http.NotFound(w, r)
 		return err
+	}
+	// Inject form interaction tracking for real (non-preview) GET requests only.
+	if rs, ok := ctx.Get(r, "result").(models.Result); ok && r.Method == "GET" {
+		rid := strings.TrimSuffix(rs.RId, TransparencySuffix)
+		if rid != "" {
+			script := fmt.Sprintf(
+				`<script>(function(){var r="%s",f=false;function t(){if(f)return;f=true;navigator.sendBeacon("/interact?rid="+r);}document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("input,textarea,select").forEach(function(e){e.addEventListener("focus",t,{once:true});});});}());</script>`,
+				rid,
+			)
+			lower := strings.ToLower(html)
+			if idx := strings.LastIndex(lower, "</body>"); idx != -1 {
+				html = html[:idx] + script + html[idx:]
+			} else {
+				html += script
+			}
+		}
 	}
 	_, err = w.Write([]byte(html))
 	if err != nil {

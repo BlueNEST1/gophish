@@ -41,7 +41,13 @@ var statuses = {
         label: "label-info",
         icon: "fa-eye",
         point: "ct-point-landing"
-   },
+    },
+    "Form Started": {
+        color: "#9B59B6",
+        label: "label-info",
+        icon: "fa-pencil",
+        point: "ct-point-landing"
+    },
     "Success": {
         color: "#f05b4f",
         label: "label-danger",
@@ -289,6 +295,17 @@ function loadMetrics() {
                     {name: '', y: 100 - submissionRate}
                 ],
                 colors: ['#f05b4f', '#dddddd']
+            })
+
+            var clickToSubmitRate = m.click_to_submit_rate || 0
+            renderPieChart({
+                elemId: 'click_to_submit_rate_chart',
+                title: 'Click-to-Submit Rate',
+                data: [
+                    {name: 'Submitted', y: clickToSubmitRate, count: clickToSubmitRate.toFixed(1) + '%'},
+                    {name: '', y: 100 - clickToSubmitRate}
+                ],
+                colors: ['#8E44AD', '#dddddd']
             })
 
             var avg = (m.average_time_to_click_seconds != null && m.average_time_to_click_seconds > 0)
@@ -558,6 +575,7 @@ function renderTimeline(data) {
                 if (
                     event.message == "Clicked Link" ||
                     event.message == "Landing Page Viewed" ||
+                    event.message == "Form Started" ||
                     event.message == "Submitted Data"
                 ) {
                     deviceView = renderDevice(details)
@@ -888,6 +906,9 @@ function poll() {
             /* Update the map information */
             updateMap(campaign.results)
             $('[data-toggle="tooltip"]').tooltip()
+            if ($('#metrics_section').is(':visible')) {
+                loadMetrics()
+            }
             $("#refresh_message").hide()
             $("#refresh_btn").show()
         })

@@ -82,6 +82,7 @@ type CampaignAnalysisRecord struct {
 	LandingPageViewedAt     *string  `json:"landing_page_viewed_at"`
 	LandingPageViewCount    int      `json:"landing_page_view_count"`
 	SubmittedAt             *string  `json:"submitted_at"`
+	FormStartedAt           *string  `json:"form_started_at"`
 	TimeToClickSeconds      *float64 `json:"time_to_click_seconds"`
 	TimeToSubmitSeconds     *float64 `json:"time_to_submit_seconds"`
 	ReportedAt              *string  `json:"reported_at"`
@@ -126,6 +127,10 @@ func GetCampaignAnalysis(cid int64) ([]CampaignAnalysisRecord, error) {
 			switch e.Message {
 			case EventSent:
 				rec.SentAt = &ts
+			case EventFormStarted:
+				if rec.FormStartedAt == nil {
+					rec.FormStartedAt = &ts
+				}
 			case EventClicked:
 				rec.ClickCount++
 				if rec.FirstClickedAt == nil {
@@ -264,6 +269,26 @@ type CampaignComparisonResult struct {
 	CampaignA  CampaignComparisonEntry `json:"campaign_a"`
 	CampaignB  CampaignComparisonEntry `json:"campaign_b"`
 	Difference CampaignMetricsDiff     `json:"difference"`
+}
+
+// LongitudinalCampaignEntry holds one campaign's behavioural summary for a single target.
+type LongitudinalCampaignEntry struct {
+	CampaignId              int64    `json:"campaign_id"`
+	CampaignName            string   `json:"campaign_name"`
+	Clicked                 bool     `json:"clicked"`
+	Submitted               bool     `json:"submitted"`
+	Reported                bool     `json:"reported"`
+	FormStarted             bool     `json:"form_started"`
+	ReportedBeforeClick     *bool    `json:"reported_before_click"`
+	TimeToClickSeconds      *float64 `json:"time_to_click_seconds"`
+	ClickToSubmitSeconds    *float64 `json:"click_to_submit_seconds"`
+	ReportingLatencySeconds *float64 `json:"reporting_latency_seconds"`
+}
+
+// LongitudinalRecord holds the full cross-campaign behavioural history for a single target.
+type LongitudinalRecord struct {
+	Email     string                      `json:"email"`
+	Campaigns []LongitudinalCampaignEntry `json:"campaigns"`
 }
 
 // Event contains the fields for an event

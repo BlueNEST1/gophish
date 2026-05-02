@@ -59,6 +59,20 @@ func (r *Result) HandleLandingPageViewed(details EventDetails) error {
 	r.ModifiedDate = event.Time
 	return db.Save(r).Error
 }
+// HandleFormStarted records a Form Started event the first time a target
+// interacts with a form field on the phishing page.
+func (r *Result) HandleFormStarted(details EventDetails) error {
+	if r.hasEvent(EventFormStarted) {
+		return nil
+	}
+	event, err := r.createEvent(EventFormStarted, details)
+	if err != nil {
+		return err
+	}
+	r.ModifiedDate = event.Time
+	return db.Save(r).Error
+}
+
 func (r *Result) createEvent(status string, details interface{}) (*Event, error) {
 	e := &Event{Email: r.Email, Message: status}
 	if details != nil {

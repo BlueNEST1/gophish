@@ -60,6 +60,7 @@ const (
 	StatusRetry        string = "Retrying"
 	Error              string = "Error"
 	EventLandingPageViewed string = "Landing Page Viewed"
+	EventFormStarted       string = "Form Started"
 )
 
 // Flash is used to hold flash information for use in templates.

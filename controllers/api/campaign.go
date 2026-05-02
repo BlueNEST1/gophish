@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	ctx "github.com/gophish/gophish/context"
 	log "github.com/gophish/gophish/logger"
@@ -242,4 +244,71 @@ func (as *Server) CampaignComplete(w http.ResponseWriter, r *http.Request) {
 		}
 		JSONResponse(w, models.Response{Success: true, Message: "Campaign completed successfully!"}, http.StatusOK)
 	}
+}
+
+// LongitudinalAnalysis returns a per-target cross-campaign behavioural summary.
+// Query param: campaign_ids (comma-separated list of campaign IDs, in chronological order).
+func (as *Server) LongitudinalAnalysis(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		return
+	}
+	uid := ctx.Get(r, "user_id").(int64)
+	idsParam := r.URL.Query().Get("campaign_ids")
+	if idsParam == "" {
+		JSONResponse(w, models.Response{Success: false, Message: "campaign_ids parameter required"}, http.StatusBadRequest)
+		return
+	}
+	type campaignMeta struct {
+		id   int64
+		name string
+	}
+	var campaigns []campaignMeta
+	for _, part := range strings.Split(idsParam, ",") {
+		part = strings.TrimSpace(part)
+		id, err := strconv.ParseInt(part, 10, 64)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: "Invalid campaign ID: " + part}, http.StatusBadRequest)
+			return
+		}
+		c, err := models.GetCampaign(id, uid)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: fmt.Sprintf("Campaign %d not found", id)}, http.StatusNotFound)
+			return
+		}
+		campaigns = append(campaigns, campaignMeta{id: id, name: c.Name})
+	}
+	emailOrder := []string{}
+	emailMap := map[string]*models.LongitudinalRecord{}
+	for _, cm := range campaigns {
+		records, err := models.GetCampaignAnalysis(cm.id)
+		if err != nil {
+			log.Error(err)
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+		for _, rec := range records {
+			if _, exists := emailMap[rec.Email]; !exists {
+				emailOrder = append(emailOrder, rec.Email)
+				emailMap[rec.Email] = &models.LongitudinalRecord{Email: rec.Email}
+			}
+			entry := models.LongitudinalCampaignEntry{
+				CampaignId:              cm.id,
+				CampaignName:            cm.name,
+				Clicked:                 rec.FirstClickedAt != nil,
+				Submitted:               rec.SubmittedAt != nil,
+				Reported:                rec.ReportedAt != nil,
+				FormStarted:             rec.FormStartedAt != nil,
+				ReportedBeforeClick:     rec.ReportedBeforeClick,
+				TimeToClickSeconds:      rec.TimeToClickSeconds,
+				ClickToSubmitSeconds:    rec.ClickToSubmitSeconds,
+				ReportingLatencySeconds: rec.ReportingLatencySeconds,
+			}
+			emailMap[rec.Email].Campaigns = append(emailMap[rec.Email].Campaigns, entry)
+		}
+	}
+	result := make([]models.LongitudinalRecord, 0, len(emailOrder))
+	for _, email := range emailOrder {
+		result = append(result, *emailMap[email])
+	}
+	JSONResponse(w, result, http.StatusOK)
 }
