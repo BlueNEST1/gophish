@@ -146,6 +146,7 @@ func (as *Server) CampaignAnalysis(w http.ResponseWriter, r *http.Request) {
 // CampaignCompare returns a side-by-side metric comparison between two campaigns.
 func (as *Server) CampaignCompare(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
+		JSONResponse(w, models.Response{Success: false, Message: "Method Not Allowed"}, http.StatusMethodNotAllowed)
 		return
 	}
 	uid := ctx.Get(r, "user_id").(int64)
@@ -192,6 +193,8 @@ func (as *Server) CampaignCompare(w http.ResponseWriter, r *http.Request) {
 			Name:                      cA.Name,
 			UnsafeInteractionRate:     mA.UnsafeInteractionRate,
 			SubmissionRate:            mA.SubmissionRate,
+			ClickToSubmitRate:         mA.ClickToSubmitRate,
+			ReportingRate:             mA.ReportingRate,
 			AverageTimeToClickSeconds: mA.AverageTimeToClickSeconds,
 		},
 		CampaignB: models.CampaignComparisonEntry{
@@ -199,11 +202,15 @@ func (as *Server) CampaignCompare(w http.ResponseWriter, r *http.Request) {
 			Name:                      cB.Name,
 			UnsafeInteractionRate:     mB.UnsafeInteractionRate,
 			SubmissionRate:            mB.SubmissionRate,
+			ClickToSubmitRate:         mB.ClickToSubmitRate,
+			ReportingRate:             mB.ReportingRate,
 			AverageTimeToClickSeconds: mB.AverageTimeToClickSeconds,
 		},
 		Difference: models.CampaignMetricsDiff{
 			UnsafeInteractionRate:     mB.UnsafeInteractionRate - mA.UnsafeInteractionRate,
 			SubmissionRate:            mB.SubmissionRate - mA.SubmissionRate,
+			ClickToSubmitRate:         mB.ClickToSubmitRate - mA.ClickToSubmitRate,
+			ReportingRate:             mB.ReportingRate - mA.ReportingRate,
 			AverageTimeToClickSeconds: timeDiff,
 		},
 	}

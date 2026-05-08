@@ -72,6 +72,32 @@
         </div>
     </div>
 </div>
+<!-- Longitudinal Analysis Panel -->
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2" style="margin-top:30px;">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title" style="cursor:pointer;" data-toggle="collapse" data-target="#longitudinalBody">
+        <i class="fa fa-line-chart"></i> Longitudinal Target Analysis
+        <i class="fa fa-chevron-down pull-right"></i>
+      </h4>
+    </div>
+    <div id="longitudinalBody" class="collapse">
+      <div class="panel-body">
+        <p class="text-muted">Select two or more campaigns to see how individual targets behaved across each one.</p>
+        <div id="longitudinal_campaign_list" style="margin-bottom:10px;"></div>
+        <button class="btn btn-default" onclick="runLongitudinalAnalysis()">
+          <i class="fa fa-play"></i> Run Analysis
+        </button>
+        <div id="longitudinal_results" style="display:none;margin-top:20px;overflow-x:auto;">
+          <table id="longitudinal_table" class="table table-bordered table-condensed table-hover">
+            <thead id="longitudinal_thead"></thead>
+            <tbody id="longitudinal_tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Modal -->
 <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog" role="document">

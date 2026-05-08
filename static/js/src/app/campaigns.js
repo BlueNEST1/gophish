@@ -1,3 +1,58 @@
+function runLongitudinalAnalysis() {
+    var ids = []
+    $('.longitudinal-campaign-cb:checked').each(function () {
+        ids.push($(this).val())
+    })
+    if (ids.length < 2) {
+        errorFlash("Select at least two campaigns to run a longitudinal analysis.")
+        return
+    }
+    api.campaigns.longitudinal(ids)
+        .success(function (data) {
+            if (!data || data.length === 0) {
+                errorFlash("No target data found for the selected campaigns.")
+                return
+            }
+            // Build header from the campaigns present in the first record that has entries
+            var campaignNames = []
+            $.each(data, function (i, record) {
+                if (campaignNames.length === 0 && record.campaigns) {
+                    $.each(record.campaigns, function (j, c) {
+                        campaignNames.push(escapeHtml(c.campaign_name))
+                    })
+                }
+            })
+            var thead = '<tr><th>Target Email</th>'
+            $.each(campaignNames, function (i, name) {
+                thead += '<th colspan="4" style="text-align:center;">' + name + '</th>'
+            })
+            thead += '</tr><tr><th></th>'
+            for (var i = 0; i < campaignNames.length; i++) {
+                thead += '<th>Clicked</th><th>Interacted</th><th>Submitted</th><th>Reported</th>'
+            }
+            thead += '</tr>'
+            $('#longitudinal_thead').html(thead)
+
+            var tbody = ''
+            $.each(data, function (i, record) {
+                tbody += '<tr><td>' + escapeHtml(record.email) + '</td>'
+                $.each(record.campaigns, function (j, c) {
+                    var interacted = c.clicked || c.submitted
+                    tbody += '<td class="text-center">' + (c.clicked ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center">' + (interacted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center">' + (c.submitted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center">' + (c.reported ? '<i class="fa fa-check text-success"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                })
+                tbody += '</tr>'
+            })
+            $('#longitudinal_tbody').html(tbody)
+            $('#longitudinal_results').show()
+        })
+        .error(function () {
+            errorFlash("Error running longitudinal analysis.")
+        })
+}
+
 // labels is a map of campaign statuses to
 // CSS classes
 var labels = {
@@ -404,6 +459,15 @@ $(document).ready(function () {
                 activeCampaignsTable.rows.add(rows['active']).draw()
                 archivedCampaignsTable.rows.add(rows['archived']).draw()
                 $('[data-toggle="tooltip"]').tooltip()
+                // Populate longitudinal campaign checkboxes
+                var list = $('#longitudinal_campaign_list')
+                $.each(campaigns, function (i, c) {
+                    list.append(
+                        '<label style="font-weight:normal;margin-right:20px;cursor:pointer;">' +
+                        '<input type="checkbox" class="longitudinal-campaign-cb" value="' + c.id + '" style="margin-right:5px;"> ' +
+                        escapeHtml(c.name) + '</label>'
+                    )
+                })
             } else {
                 $("#emptyMessage").show()
             }
@@ -413,7 +477,8 @@ $(document).ready(function () {
             errorFlash("Error fetching campaigns")
         })
     // Select2 Defaults
-    $.fn.select2.defaults.set("width", "100%");
+    $.fn.select2.defaults.set("width", "100%")
+
     $.fn.select2.defaults.set("dropdownParent", $("#modal_body"));
     $.fn.select2.defaults.set("theme", "bootstrap");
     $.fn.select2.defaults.set("sorter", function (data) {

@@ -88,6 +88,10 @@ var api = {
         // compare() - Queries the API for GET /campaigns/compare
         compare: function (idA, idB) {
             return query("/campaigns/compare?campaign_a=" + idA + "&campaign_b=" + idB, "GET", {}, true)
+        },
+        // longitudinal() - Queries the API for GET /campaigns/longitudinal
+        longitudinal: function (ids) {
+            return query("/campaigns/longitudinal?campaign_ids=" + ids.join(","), "GET", {}, true)
         }
     },
     // campaignId contains the endpoints for /campaigns/:id

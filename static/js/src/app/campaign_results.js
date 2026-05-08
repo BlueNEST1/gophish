@@ -336,7 +336,8 @@ function loadComparisonDropdown() {
         })
 }
 
-// Renders a difference cell with sign and colour coding
+// Renders a difference cell with sign and colour coding.
+// lowerIsBetter=true: negative diff is green; lowerIsBetter=false (higher is better): positive diff is green.
 function renderDiffCell(selector, value, unit, lowerIsBetter) {
     if (value === null || value === undefined) {
         $(selector).text('N/A')
@@ -344,10 +345,15 @@ function renderDiffCell(selector, value, unit, lowerIsBetter) {
     }
     var sign = value > 0 ? '+' : ''
     var color = ''
-    if (lowerIsBetter) {
-        color = value < 0 ? 'green' : (value > 0 ? 'red' : '')
+    if (value !== 0) {
+        if (lowerIsBetter) {
+            color = value < 0 ? 'green' : 'red'
+        } else {
+            color = value > 0 ? 'green' : 'red'
+        }
     }
-    $(selector).html('<span style="color:' + color + ';">' + sign + value.toFixed(1) + unit + '</span>')
+    var style = color ? ' style="color:' + color + ';"' : ''
+    $(selector).html('<span' + style + '>' + sign + value.toFixed(1) + unit + '</span>')
 }
 
 // Fetches the comparison result and renders the table
@@ -364,12 +370,18 @@ function runComparison() {
             $('#cmp_unsafe_b').text(r.campaign_b.unsafe_interaction_rate.toFixed(1) + '%')
             $('#cmp_sub_a').text(r.campaign_a.submission_rate.toFixed(1) + '%')
             $('#cmp_sub_b').text(r.campaign_b.submission_rate.toFixed(1) + '%')
+            $('#cmp_cts_a').text(r.campaign_a.click_to_submit_rate.toFixed(1) + '%')
+            $('#cmp_cts_b').text(r.campaign_b.click_to_submit_rate.toFixed(1) + '%')
+            $('#cmp_report_a').text(r.campaign_a.reporting_rate.toFixed(1) + '%')
+            $('#cmp_report_b').text(r.campaign_b.reporting_rate.toFixed(1) + '%')
             // Avg time to click — null means no clicks
             $('#cmp_time_a').text(r.campaign_a.average_time_to_click_seconds != null ? r.campaign_a.average_time_to_click_seconds.toFixed(1) + 's' : 'N/A')
             $('#cmp_time_b').text(r.campaign_b.average_time_to_click_seconds != null ? r.campaign_b.average_time_to_click_seconds.toFixed(1) + 's' : 'N/A')
             // Difference cells
             renderDiffCell('#cmp_unsafe_diff', r.difference.unsafe_interaction_rate, '%', true)
             renderDiffCell('#cmp_sub_diff', r.difference.submission_rate, '%', true)
+            renderDiffCell('#cmp_cts_diff', r.difference.click_to_submit_rate, '%', true)
+            renderDiffCell('#cmp_report_diff', r.difference.reporting_rate, '%', false)
             renderDiffCell('#cmp_time_diff', r.difference.average_time_to_click_seconds, 's', false)
             $('#comparison_results').show()
         })

@@ -254,6 +254,8 @@ type CampaignComparisonEntry struct {
 	Name                      string   `json:"name"`
 	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
 	SubmissionRate            float64  `json:"submission_rate"`
+	ClickToSubmitRate         float64  `json:"click_to_submit_rate"`
+	ReportingRate             float64  `json:"reporting_rate"`
 	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
 }
 
@@ -261,6 +263,8 @@ type CampaignComparisonEntry struct {
 type CampaignMetricsDiff struct {
 	UnsafeInteractionRate     float64  `json:"unsafe_interaction_rate"`
 	SubmissionRate            float64  `json:"submission_rate"`
+	ClickToSubmitRate         float64  `json:"click_to_submit_rate"`
+	ReportingRate             float64  `json:"reporting_rate"`
 	AverageTimeToClickSeconds *float64 `json:"average_time_to_click_seconds"`
 }
 
