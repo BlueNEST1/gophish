@@ -22,13 +22,16 @@ function runLongitudinalAnalysis() {
                     })
                 }
             })
+            var groupColors = ['', '#eef2f7']
             var thead = '<tr><th>Target Email</th>'
             $.each(campaignNames, function (i, name) {
-                thead += '<th colspan="4" style="text-align:center;">' + name + '</th>'
+                var bg = groupColors[i % 2] ? ' style="background:' + groupColors[i % 2] + ';text-align:center;"' : ' style="text-align:center;"'
+                thead += '<th colspan="4"' + bg + '>' + name + '</th>'
             })
             thead += '</tr><tr><th></th>'
             for (var i = 0; i < campaignNames.length; i++) {
-                thead += '<th>Clicked</th><th>Interacted</th><th>Submitted</th><th>Reported</th>'
+                var bg = groupColors[i % 2] ? ' style="background:' + groupColors[i % 2] + ';"' : ''
+                thead += '<th' + bg + '>Clicked</th><th' + bg + '>Interacted</th><th' + bg + '>Submitted</th><th' + bg + '>Reported</th>'
             }
             thead += '</tr>'
             $('#longitudinal_thead').html(thead)
@@ -38,10 +41,11 @@ function runLongitudinalAnalysis() {
                 tbody += '<tr><td>' + escapeHtml(record.email) + '</td>'
                 $.each(record.campaigns, function (j, c) {
                     var interacted = c.clicked || c.submitted
-                    tbody += '<td class="text-center">' + (c.clicked ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
-                    tbody += '<td class="text-center">' + (interacted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
-                    tbody += '<td class="text-center">' + (c.submitted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
-                    tbody += '<td class="text-center">' + (c.reported ? '<i class="fa fa-check text-success"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    var bg = groupColors[j % 2] ? ' style="background:' + groupColors[j % 2] + ';"' : ''
+                    tbody += '<td class="text-center"' + bg + '>' + (c.clicked ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center"' + bg + '>' + (interacted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center"' + bg + '>' + (c.submitted ? '<i class="fa fa-check text-danger"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
+                    tbody += '<td class="text-center"' + bg + '>' + (c.reported ? '<i class="fa fa-check text-success"></i>' : '<i class="fa fa-times text-muted"></i>') + '</td>'
                 })
                 tbody += '</tr>'
             })
